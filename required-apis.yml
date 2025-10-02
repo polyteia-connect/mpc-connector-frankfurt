@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Measles Connector & ESU API
+  version: 1.0.0
+
+paths:
+  /measles-vaccination-check/schedule:
+    post:
+      summary: Schedule a request to check measles Sachstands-IDs against ESU IDs of vaccinated children.
+      tags:
+        - measles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+      responses:
+        '200':
+          description: Request scheduled
+
+  /measles-vaccination-check/result/{requestId}:
+    get:
+      summary: Get result of scheduled request by requestId.
+      tags:
+        - measles
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status of the request. If the status is Pending, try at a later time again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /vaccinated-ids/:
+    get:
+      summary: Get Sachstands-IDs for fully vaccinated persons.
+      tags:
+        - esu
+      responses:
+        '200':
+          description: Array of vaccinated Sachstand IDs (UUIDs).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+
+components:
+  schemas:
+    Request:
+      type: object
+      required:
+        - requestId
+        - fileStateIds
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        fileStateIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    Response:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        result:
+          type: object
+          required:
+            - match
+          properties:
+            match:
+              type: boolean
+              description: Indicates whether there was a match between the Sachstands-ID of the measles and ESU module.
+
+    Status:
+      type: string
+      enum:
+        - PENDING
+        - COMPLETED
