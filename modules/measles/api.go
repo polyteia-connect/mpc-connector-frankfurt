@@ -2,6 +2,7 @@ package measles
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,11 @@ func (h *Handler) Configure() {
 	h.router.POST("/measles-vaccination-check/schedule", h.scheduleHandler)
 	h.router.GET("/measles-vaccination-check/result/:requestId", h.resultHandler)
 	h.router.GET("/callback/result/:requestId", h.callbackHandler)
+}
+
+func (h *Handler) Run(addr string) error {
+	slog.Info("Starting Measles API Server", "address", addr)
+	return h.router.Run(addr)
 }
 
 func (h *Handler) healthHandler(c *gin.Context) {

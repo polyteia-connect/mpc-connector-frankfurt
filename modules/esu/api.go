@@ -1,6 +1,7 @@
 package esu
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,11 @@ func (h *Handler) Configure() {
 	h.router.Use(gin.Recovery(), gin.Logger())
 	h.router.GET("/health", h.healthHandler)
 	h.router.PUT("/schedule/:taskId", h.scheduleHandler)
+}
+
+func (h *Handler) Run(addr string) error {
+	slog.Info("Starting ESU API Server", "address", addr)
+	return h.router.Run(addr)
 }
 
 func (h *Handler) healthHandler(c *gin.Context) {

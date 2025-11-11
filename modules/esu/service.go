@@ -2,23 +2,20 @@ package esu
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/polyteia-de/atlas/mpc"
 )
 
 type Service struct {
-	mpcClient       *mpc.Client
-	esuClient       *Client
-	callbackBaseURL string
+	mpcClient *mpc.Client
+	esuClient *Client
 }
 
-func NewService(mpcClient *mpc.Client, esuClient *Client, callbackBaseURL string) *Service {
+func NewService(mpcClient *mpc.Client, esuClient *Client) *Service {
 	return &Service{
-		mpcClient:       mpcClient,
-		esuClient:       esuClient,
-		callbackBaseURL: callbackBaseURL,
+		mpcClient: mpcClient,
+		esuClient: esuClient,
 	}
 }
 
@@ -34,14 +31,13 @@ func (s *Service) ScheduleTask(ctx context.Context, taskID string) error {
 }
 
 func (s *Service) launchMPCTask(ctx context.Context, taskID string, ids []string) {
-	callbackURL := fmt.Sprintf("%s/callback/result/%s", s.callbackBaseURL, taskID)
 	data := make([][]byte, len(ids))
 
 	for i, id := range ids {
 		data[i] = []byte(id)
 	}
 
-	_, err := s.mpcClient.LaunchTask(ctx, data, callbackURL)
+	_, err := s.mpcClient.LaunchTask(ctx, data, taskID, "")
 	if err != nil {
 		slog.Error("Failed to launch MPC task", "error", err, "task", taskID)
 		return

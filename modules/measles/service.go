@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/polyteia-de/atlas/mpc"
 	"github.com/polyteia-de/atlas/pkg/store"
-	"resty.dev/v3"
 )
 
 type Status string
@@ -102,7 +102,7 @@ func (s *Service) launchMPCTask(ctx context.Context, task *Task) {
 		data[i] = []byte(fileStateID)
 	}
 
-	_, err := s.mpcClient.LaunchTask(ctx, data, callbackURL)
+	_, err := s.mpcClient.LaunchTask(ctx, data, task.ID, callbackURL)
 	if err != nil {
 		slog.Error("Failed to launch MPC task", "error", err, "task", task.ID)
 		return

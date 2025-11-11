@@ -1,0 +1,75 @@
+services:
+  polytune0:
+    image: ghcr.io/sine-fdn/polytune/polytune-http-server:latest
+    networks:
+      - atlas-network
+
+  polytune1:
+    image: ghcr.io/sine-fdn/polytune/polytune-http-server:latest
+    networks:
+      - atlas-network
+
+  esu:
+    build:
+      context: .
+      dockerfile: Dockerfile-esu
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - VACCINATION_BASE_URL=http://mock:3000
+      - DEBUG=true
+      - JWT_TOKEN_SECRET=secret
+      - JWT_ISSUER=https://example.com
+      - MPC_BASE_URL=http://polytune1:8000
+      - MPC_LEADER_ID=0
+      - MPC_PARTY_ID=1
+      - MPC_PARTICIPANTS=http://polytune0:8000,http://polytune1:8000
+    networks:
+      - atlas-network
+    depends_on:
+      - polytune0
+      - polytune1
+
+  measles:
+    build:
+      context: .
+      dockerfile: Dockerfile-measles
+    ports:
+      - "3001:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - DEBUG=true
+      - JWT_TOKEN_SECRET=secret
+      - JWT_ISSUER=https://example.com
+      - MPC_BASE_URL=http://polytune0:8000
+      - MPC_LEADER_ID=0
+      - MPC_PARTY_ID=0
+      - MPC_PARTICIPANTS=http://polytune0:8000,http://polytune1:8000
+      - CALLBACK_BASE_URL=http://measles:3000
+      - ESU_BASE_URL=http://esu:3000
+    depends_on:
+      - esu
+      - polytune0
+      - polytune1
+    networks:
+      - atlas-network
+
+  mock:
+    build:
+      context: .
+      dockerfile: Dockerfile-mock
+    ports:
+      - "3002:3000"
+    networks:
+      - atlas-network
+
+networks:
+  atlas-network:
+    driver: bridge
+
+volumes:
+  atlas-data:
+    driver: local

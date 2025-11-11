@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"resty.dev/v3"
+	"github.com/go-resty/resty/v2"
 )
 
 type Client struct {
