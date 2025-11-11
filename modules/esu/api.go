@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -37,7 +38,7 @@ func (h *Handler) healthHandler(c *gin.Context) {
 }
 
 func (h *Handler) scheduleHandler(c *gin.Context) {
-	taskID := c.Param("taskId")
+	taskID := uuid.MustParse(c.Param("taskId"))
 
 	err := h.service.ScheduleTask(c, taskID)
 	if err != nil {

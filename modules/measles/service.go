@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 	"github.com/polyteia-de/atlas/mpc"
 	"github.com/polyteia-de/atlas/pkg/store"
 )
@@ -23,8 +24,8 @@ type TaskResult struct {
 }
 
 type Task struct {
-	ID           string
-	FileStateIDs []string
+	ID           uuid.UUID
+	FileStateIDs []uuid.UUID
 	Status       Status
 	Result       *TaskResult
 }
@@ -46,17 +47,17 @@ func NewService(store store.Store[*Task], mpcClient *mpc.Client, callbackBaseURL
 	}
 }
 
-func (s *Service) GetTask(ctx context.Context, requestID string) (*Task, error) {
-	return s.store.Get(ctx, requestID)
+func (s *Service) GetTask(ctx context.Context, requestID uuid.UUID) (*Task, error) {
+	return s.store.Get(ctx, requestID.String())
 }
 
-func (s *Service) UpdateTask(ctx context.Context, requestID string, task *Task) error {
-	return s.store.Set(ctx, requestID, task)
+func (s *Service) UpdateTask(ctx context.Context, requestID uuid.UUID, task *Task) error {
+	return s.store.Set(ctx, requestID.String(), task)
 }
 
 func (s *Service) ScheduleTask(ctx context.Context, task *Task) (*Task, error) {
 	// Check if task is already there with the given ID.
-	t, err := s.store.Get(ctx, task.ID)
+	t, err := s.store.Get(ctx, task.ID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (s *Service) ScheduleTask(ctx context.Context, task *Task) (*Task, error) {
 	}
 
 	// Store the task
-	if err := s.store.Set(ctx, task.ID, task); err != nil {
+	if err := s.store.Set(ctx, task.ID.String(), task); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +80,7 @@ func (s *Service) ScheduleTask(ctx context.Context, task *Task) (*Task, error) {
 }
 
 func (s *Service) launchESUTask(ctx context.Context, task *Task) {
-	path := fmt.Sprintf("/schedule/%s", task.ID)
+	path := fmt.Sprintf("/schedule/%s", task.ID.String())
 	resp, err := s.esuClient.R().SetContext(ctx).Put(path)
 	if err != nil {
 		slog.Error("Failed to launch ESU task", "error", err, "task", task.ID)
@@ -95,11 +96,11 @@ func (s *Service) launchESUTask(ctx context.Context, task *Task) {
 }
 
 func (s *Service) launchMPCTask(ctx context.Context, task *Task) {
-	callbackURL := fmt.Sprintf("%s/callback/result/%s", s.callbackBaseURL, task.ID)
-	data := make([][]byte, len(task.FileStateIDs))
+	callbackURL := fmt.Sprintf("%s/callback/result/%s", s.callbackBaseURL, task.ID.String())
+	data := make([]uuid.UUID, len(task.FileStateIDs))
 
 	for i, fileStateID := range task.FileStateIDs {
-		data[i] = []byte(fileStateID)
+		data[i] = fileStateID
 	}
 
 	_, err := s.mpcClient.LaunchTask(ctx, data, task.ID, callbackURL)

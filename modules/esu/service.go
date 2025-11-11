@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/google/uuid"
 	"github.com/polyteia-de/atlas/mpc"
 )
 
@@ -19,7 +20,7 @@ func NewService(mpcClient *mpc.Client, esuClient *Client) *Service {
 	}
 }
 
-func (s *Service) ScheduleTask(ctx context.Context, taskID string) error {
+func (s *Service) ScheduleTask(ctx context.Context, taskID uuid.UUID) error {
 	ids, err := s.esuClient.GetVaccinatedIDs(ctx)
 	if err != nil {
 		return err
@@ -30,11 +31,11 @@ func (s *Service) ScheduleTask(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (s *Service) launchMPCTask(ctx context.Context, taskID string, ids []string) {
-	data := make([][]byte, len(ids))
+func (s *Service) launchMPCTask(ctx context.Context, taskID uuid.UUID, ids []uuid.UUID) {
+	data := make([]uuid.UUID, len(ids))
 
 	for i, id := range ids {
-		data[i] = []byte(id)
+		data[i] = id
 	}
 
 	_, err := s.mpcClient.LaunchTask(ctx, data, taskID, "")

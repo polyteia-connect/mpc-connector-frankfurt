@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 )
 
 type Client struct {
@@ -18,8 +19,8 @@ func NewClient(c *resty.Client) *Client {
 	}
 }
 
-func (c *Client) GetVaccinatedIDs(ctx context.Context) ([]string, error) {
-	resp, err := c.client.R().SetContext(ctx).SetResult(&[]string{}).Get("/vaccinated-ids")
+func (c *Client) GetVaccinatedIDs(ctx context.Context) ([]uuid.UUID, error) {
+	resp, err := c.client.R().SetContext(ctx).SetResult(&[]uuid.UUID{}).Get("/vaccinated-ids")
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +29,7 @@ func (c *Client) GetVaccinatedIDs(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("failed to get vaccinated IDs: %d, %s", resp.StatusCode(), resp.String())
 	}
 
-	ids, ok := resp.Result().(*[]string)
+	ids, ok := resp.Result().(*[]uuid.UUID)
 	if !ok {
 		return nil, fmt.Errorf("invalid response type: %T", resp.Result())
 	}

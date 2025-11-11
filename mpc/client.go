@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 )
 
 //go:embed program.garble
@@ -52,7 +53,7 @@ func NewClient(c *resty.Client, leader, party int, participants []string) *Clien
 	}
 }
 
-func (c *Client) LaunchTask(ctx context.Context, data [][]byte, taskID, callbackURL string) (string, error) {
+func (c *Client) LaunchTask(ctx context.Context, data []uuid.UUID, taskID uuid.UUID, callbackURL string) (string, error) {
 	policy := c.createPolicy(data, taskID, callbackURL)
 
 	resp, err := c.client.R().
@@ -67,10 +68,10 @@ func (c *Client) LaunchTask(ctx context.Context, data [][]byte, taskID, callback
 	return resp.String(), nil
 }
 
-func (c *Client) createPolicy(data [][]byte, taskID string, callbackURL string) LaunchRequest {
+func (c *Client) createPolicy(data []uuid.UUID, taskID uuid.UUID, callbackURL string) LaunchRequest {
 	launchRequest := LaunchRequest{}
 	launchRequest.Leader = c.leader
-	launchRequest.ComputationID = taskID
+	launchRequest.ComputationID = taskID.String()
 	launchRequest.Participants = c.participants
 	launchRequest.Program = Program
 	launchRequest.Party = c.party

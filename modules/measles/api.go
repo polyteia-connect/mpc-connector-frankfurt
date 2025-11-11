@@ -1,11 +1,11 @@
 package measles
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Handler struct {
@@ -25,7 +25,7 @@ func (h *Handler) Configure() {
 	h.router.GET("/health", h.healthHandler)
 	h.router.POST("/measles-vaccination-check/schedule", h.scheduleHandler)
 	h.router.GET("/measles-vaccination-check/result/:requestId", h.resultHandler)
-	h.router.GET("/callback/result/:requestId", h.callbackHandler)
+	h.router.POST("/callback/result/:requestId", h.callbackHandler)
 }
 
 func (h *Handler) Run(addr string) error {
@@ -41,8 +41,8 @@ func (h *Handler) healthHandler(c *gin.Context) {
 
 func (h *Handler) scheduleHandler(c *gin.Context) {
 	payload := struct {
-		RequestID    string   `json:"requestId"`
-		FileStateIDs []string `json:"fileStateIds"`
+		RequestID    uuid.UUID   `json:"requestId"`
+		FileStateIDs []uuid.UUID `json:"fileStateIds"`
 	}{}
 
 	if err := c.BindJSON(&payload); err != nil {
@@ -70,7 +70,7 @@ func (h *Handler) scheduleHandler(c *gin.Context) {
 func (h *Handler) resultHandler(c *gin.Context) {
 	requestID := c.Param("requestId")
 
-	task, err := h.service.GetTask(c, requestID)
+	task, err := h.service.GetTask(c, uuid.MustParse(requestID))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -87,7 +87,7 @@ func (h *Handler) resultHandler(c *gin.Context) {
 }
 
 func (h *Handler) callbackHandler(c *gin.Context) {
-	requestID := c.Param("requestId")
+	requestID := uuid.MustParse(c.Param("requestId"))
 
 	task, err := h.service.GetTask(c, requestID)
 	if err != nil {
@@ -100,16 +100,39 @@ func (h *Handler) callbackHandler(c *gin.Context) {
 		return
 	}
 
-	body, err := c.GetRawData()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	task.Status = StatusCompleted
+	task.Result = &TaskResult{
+		Match: false,
+	}
+
+	result := struct {
+		Type    string `json:"type"`
+		Details string `json:"details"`
+	}{}
+
+	if err := c.BindJSON(&result); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		slog.Error("Failed to bind JSON from callback", "error", err)
 		return
 	}
 
-	fmt.Println("callback", string(body))
+	if result.Type == "error" {
+		slog.Error("Task failed with error", "error", result.Details, "task", task.ID)
+	}
 
-	task.Status = StatusCompleted
-	h.service.UpdateTask(c, requestID, task)
+	if result.Type == "success" {
+		if result.Details == "True" {
+			task.Result.Match = true
+		}
+	}
+
+	if err := h.service.UpdateTask(c, requestID, task); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		slog.Error("Failed to update task", "error", err, "task", task.ID)
+		return
+	}
+
+	slog.Info("Task completed successfully", "task", task.ID, "result", task.Result.Match)
 
 	c.JSON(http.StatusOK, gin.H{"status": "completed"})
 }
