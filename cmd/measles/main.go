@@ -1,0 +1,40 @@
+package main
+
+import (
+	"fmt"
+	"log/slog"
+	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
+	"github.com/polyteia-de/atlas/modules/measles"
+	"github.com/polyteia-de/atlas/mpc"
+	"github.com/polyteia-de/atlas/pkg/store"
+	"github.com/polyteia-de/atlas/pkg/token"
+)
+
+func main() {
+	gin.SetMode(gin.ReleaseMode)
+	config := AutoConfig()
+	mpcRestyClient := resty.New().
+		SetBaseURL(config.MPCBaseURL).
+		SetDebug(config.Debug).
+		SetPreRequestHook(
+			token.NewJWT(config.JWTTokenSecret, config.JWTIssuer).
+				RestyMiddleware(),
+		)
+
+	taskStore := store.NewMemoryStore[*measles.Task]()
+
+	mpcClient := mpc.NewClient(mpcRestyClient, config.MPCLeaderID, config.MPCPartyID, config.MPCParticipants)
+
+	measlesService := measles.NewService(taskStore, mpcClient, config.CallbackBaseURL, config.ESUBaseURL)
+
+	measlesHandler := measles.NewHandler(measlesService)
+	measlesHandler.Configure()
+
+	if err := measlesHandler.Run(fmt.Sprintf("%s:%d", config.Host, config.Port)); err != nil {
+		slog.Error("Failed to run Measles handler", "error", err)
+		os.Exit(1)
+	}
+}

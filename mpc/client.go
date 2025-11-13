@@ -4,10 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"log/slog"
-	"strings"
 
-	"github.com/polyteia-de/atlas/external"
-	"resty.dev/v3"
+	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 )
 
 //go:embed program.garble
@@ -26,7 +25,7 @@ type LaunchRequest struct {
 			} `json:"Array"`
 		} `json:"Array"`
 	} `json:"input"`
-	Output    string `json:"output"`
+	Output    string `json:"output,omitempty"`
 	Constants struct {
 		ROWS struct {
 			NumUnsigned []any `json:"NumUnsigned"`
@@ -54,14 +53,14 @@ func NewClient(c *resty.Client, leader, party int, participants []string) *Clien
 	}
 }
 
-func (c *Client) LaunchTask(ctx context.Context, data map[string]external.Data, callbackURL string) (string, error) {
-	policy := c.createPolicy(data, callbackURL)
+func (c *Client) LaunchTask(ctx context.Context, data []uuid.UUID, taskID uuid.UUID, callbackURL string) (string, error) {
+	policy := c.createPolicy(data, taskID, callbackURL)
 
-	resp, err := c.client.R().SetDebug(true).
+	resp, err := c.client.R().
 		SetBody(policy).
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
-		Post("/launch")
+		Post("/schedule")
 	if err != nil {
 		return "", err
 	}
@@ -69,15 +68,16 @@ func (c *Client) LaunchTask(ctx context.Context, data map[string]external.Data, 
 	return resp.String(), nil
 }
 
-func (c *Client) createPolicy(data map[string]external.Data, url string) LaunchRequest {
-	splittedURL := strings.Split(url, "/")
+func (c *Client) createPolicy(data []uuid.UUID, taskID uuid.UUID, callbackURL string) LaunchRequest {
 	launchRequest := LaunchRequest{}
 	launchRequest.Leader = c.leader
-	launchRequest.ComputationID = splittedURL[len(splittedURL)-1]
+	launchRequest.ComputationID = taskID.String()
 	launchRequest.Participants = c.participants
 	launchRequest.Program = Program
 	launchRequest.Party = c.party
-	launchRequest.Output = url
+	if callbackURL != "" {
+		launchRequest.Output = callbackURL
+	}
 	launchRequest.Constants.IDLEN.NumUnsigned = numUnsigned(16, "Usize")
 	launchRequest.Constants.ROWS.NumUnsigned = numUnsigned(byte(len(data)), "Usize")
 
@@ -93,10 +93,10 @@ func (c *Client) createPolicy(data map[string]external.Data, url string) LaunchR
 		// Initialize the inner array with the correct length for HashKey
 		launchRequest.Input.Array[i].Array = make([]struct {
 			NumUnsigned []any `json:"NumUnsigned"`
-		}, len(v.HashKey))
+		}, len(v))
 
 		j := 0
-		for _, bv := range v.HashKey {
+		for _, bv := range v {
 			launchRequest.Input.Array[i].Array[j].NumUnsigned = numUnsigned(bv, "U8")
 			j++
 		}
