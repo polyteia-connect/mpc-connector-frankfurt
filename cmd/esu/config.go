@@ -11,7 +11,7 @@ type Config struct {
 	Host               string   `env:"HOST" env-default:"0.0.0.0"`
 	VaccinationBaseURL string   `env:"VACCINATION_BASE_URL"`
 	Debug              bool     `env:"DEBUG" env-default:"false"`
-	JWTTokenSecret     string   `env:"JWT_TOKEN_SECRET"`
+	JWTKeyFile         string   `env:"JWT_KEY_FILE"`
 	JWTIssuer          string   `env:"JWT_ISSUER"`
 	MPCBaseURL         string   `env:"MPC_BASE_URL"`
 	MPCLeaderID        int      `env:"MPC_LEADER_ID"`

@@ -15,23 +15,22 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	config := AutoConfig()
+	jwtToken, err := token.NewJWT(config.JWTKeyFile, config.JWTIssuer)
+	if err != nil {
+		slog.Error("Failed to initialize JWT", "error", err)
+		os.Exit(1)
+	}
 	vaccinationRestyClient := resty.New().
 		SetBaseURL(config.VaccinationBaseURL).
 		SetDebug(config.Debug).
-		SetPreRequestHook(
-			token.NewJWT(config.JWTTokenSecret, config.JWTIssuer).
-				RestyMiddleware(),
-		)
+		SetPreRequestHook(jwtToken.RestyMiddleware())
 
 	esuClient := esu.NewClient(vaccinationRestyClient)
 
 	mpcRestyClient := resty.New().
 		SetBaseURL(config.MPCBaseURL).
 		SetDebug(config.Debug).
-		SetPreRequestHook(
-			token.NewJWT(config.JWTTokenSecret, config.JWTIssuer).
-				RestyMiddleware(),
-		)
+		SetPreRequestHook(jwtToken.RestyMiddleware())
 
 	mpcClient := mpc.NewClient(mpcRestyClient, config.MPCLeaderID, config.MPCPartyID, config.MPCParticipants)
 
