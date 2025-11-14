@@ -9,14 +9,14 @@ import (
 type Config struct {
 	Port               int      `env:"PORT" env-default:"3000"`
 	Host               string   `env:"HOST" env-default:"0.0.0.0"`
-	VaccinationBaseURL string   `env:"VACCINATION_BASE_URL"`
+	VaccinationBaseURL string   `env:"VACCINATION_BASE_URL" env-required:"true"`
 	Debug              bool     `env:"DEBUG" env-default:"false"`
-	JWTKeyFile         string   `env:"JWT_KEY_FILE"`
-	JWTIssuer          string   `env:"JWT_ISSUER"`
-	MPCBaseURL         string   `env:"MPC_BASE_URL"`
-	MPCLeaderID        int      `env:"MPC_LEADER_ID"`
-	MPCPartyID         int      `env:"MPC_PARTY_ID"`
-	MPCParticipants    []string `env:"MPC_PARTICIPANTS"`
+	JWTKeyFile         string   `env:"JWT_KEY_FILE" env-required:"true"`
+	JWTIssuer          string   `env:"JWT_ISSUER" env-required:"true"`
+	MPCBaseURL         string   `env:"MPC_BASE_URL" env-required:"true"`
+	MPCLeaderID        int      `env:"MPC_LEADER_ID" env-default:"0"`
+	MPCPartyID         int      `env:"MPC_PARTY_ID" env-default:"1"`
+	MPCParticipants    []string `env:"MPC_PARTICIPANTS" env-required:"true"`
 }
 
 func AutoConfig() Config {
