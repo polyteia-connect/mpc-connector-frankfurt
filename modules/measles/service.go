@@ -17,10 +17,12 @@ type Status string
 const (
 	StatusPending   Status = "PENDING"
 	StatusCompleted Status = "COMPLETED"
+	StatusFailed    Status = "FAILED"
 )
 
 type TaskResult struct {
 	Match bool
+	Error string
 }
 
 type Task struct {
@@ -97,13 +99,8 @@ func (s *Service) launchESUTask(ctx context.Context, task *Task) {
 
 func (s *Service) launchMPCTask(ctx context.Context, task *Task) {
 	callbackURL := fmt.Sprintf("%s/callback/result/%s", s.callbackBaseURL, task.ID.String())
-	data := make([]uuid.UUID, len(task.FileStateIDs))
 
-	for i, fileStateID := range task.FileStateIDs {
-		data[i] = fileStateID
-	}
-
-	_, err := s.mpcClient.LaunchTask(ctx, data, task.ID, callbackURL)
+	_, err := s.mpcClient.LaunchTask(ctx, task.FileStateIDs, task.ID, callbackURL)
 	if err != nil {
 		slog.Error("Failed to launch MPC task", "error", err, "task", task.ID)
 		return
