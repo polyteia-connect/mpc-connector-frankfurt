@@ -52,3 +52,17 @@ Once the request is sent, you can check the result by sending a request to the m
 ```bash
 curl http://localhost:3001/measles-vaccination-check/result/123e4567-e89b-12d3-a456-426614174000
 ```
+
+# Deployment
+
+The pre-built images are readily available for donwload from the GitHub Container Registry.
+
+For Measles module, you can find the image [here](https://github.com/polyteia-connect/mpc-connector-frankfurt/pkgs/container/mpc-connector-frankfurt-measles).
+
+And for ESU module, you can find the image [here](https://github.com/polyteia-connect/mpc-connector-frankfurt/pkgs/container/mpc-connector-frankfurt-esu).
+
+You can also build your own images by using the Dockerfile-esu and Dockerfile-measles files by running the following commands:
+```bash
+docker build -t mpc-connector-frankfurt-esu -f Dockerfile-esu .
+docker build -t mpc-connector-frankfurt-measles -f Dockerfile-measles .
+```
