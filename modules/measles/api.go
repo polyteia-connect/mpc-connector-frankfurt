@@ -117,7 +117,9 @@ func (h *Handler) callbackHandler(c *gin.Context) {
 	}
 
 	if result.Type == "error" {
-		slog.Error("Task failed with error", "error", result.Details, "task", task.ID)
+		task.Status = StatusFailed
+		task.Result.Error = result.Details
+		slog.Error("Task failed with error", "error", task.Result.Error, "task", task.ID)
 	}
 
 	if result.Type == "success" {
@@ -132,7 +134,7 @@ func (h *Handler) callbackHandler(c *gin.Context) {
 		return
 	}
 
-	slog.Info("Task completed successfully", "task", task.ID, "result", task.Result.Match)
+	slog.Info("Task completed", "task", task.ID, "result", task.Result.Match, "error", task.Result.Error)
 
 	c.JSON(http.StatusOK, gin.H{"status": "completed"})
 }
@@ -143,6 +145,9 @@ func mapTaskResult(task *Task) gin.H {
 	}
 
 	if task.Result != nil {
+		if task.Result.Error != "" {
+			response["error"] = task.Result.Error
+		}
 		response["result"] = map[string]bool{
 			"match": task.Result.Match,
 		}

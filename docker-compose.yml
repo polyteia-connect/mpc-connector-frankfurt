@@ -15,12 +15,14 @@ services:
       dockerfile: Dockerfile-esu
     ports:
       - "3000:3000"
+    volumes:
+      - ./testdata:/keys:ro
     environment:
       - PORT=3000
       - HOST=0.0.0.0
       - VACCINATION_BASE_URL=http://mock:3000
       - DEBUG=true
-      - JWT_TOKEN_SECRET=secret
+      - JWT_KEY_FILE=/keys/private-key.pem
       - JWT_ISSUER=https://example.com
       - MPC_BASE_URL=http://polytune1:8000
       - MPC_LEADER_ID=0
@@ -38,11 +40,13 @@ services:
       dockerfile: Dockerfile-measles
     ports:
       - "3001:3000"
+    volumes:
+      - ./testdata:/keys:ro
     environment:
       - PORT=3000
       - HOST=0.0.0.0
       - DEBUG=true
-      - JWT_TOKEN_SECRET=secret
+      - JWT_KEY_FILE=/keys/private-key.pem
       - JWT_ISSUER=https://example.com
       - MPC_BASE_URL=http://polytune0:8000
       - MPC_LEADER_ID=0

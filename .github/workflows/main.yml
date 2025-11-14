@@ -1,0 +1,29 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  esu-docker:
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/docker.yml
+    name: ESU Docker
+    with:
+      dockerfile: Dockerfile-esu
+      image_suffix: "-esu"
+
+  measles-docker:
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/docker.yml
+    name: Measles Docker
+    with:
+      dockerfile: Dockerfile-measles
+      image_suffix: "-measles"

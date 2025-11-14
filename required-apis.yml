@@ -79,6 +79,9 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/Status'
+        error:
+          type: string
+          description: Error message if the request failed. Only present if the status is FAILED.
         result:
           type: object
           required:
@@ -93,3 +96,4 @@ components:
       enum:
         - PENDING
         - COMPLETED
+        - FAILED

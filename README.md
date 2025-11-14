@@ -1,43 +1,68 @@
 # MPC Connector Frankfurt
 
-This is a connector to call the Polytune MPC server.
+This is a connector to call the Polytune MPC server for Frankfurt use case.
+Connector is divided into 2 modules: Measles and ESU. Both modules run as separate services.
+Both modules can be configured via environment variables. See below the configuration options for each module.
 
-## Setup (Docker)
+## Measles Module
 
-Before proceeding, please make sure that the MPC server is running and is reachable
+### Configuration Options (Environment Variables)
 
-1. Build the docker container:
-   ```bash
-   docker build .
-   ```
-3. You can configure the connector by passing values in the environment variables. An [example.env](example.env) if
-   provided.
-4. Multiple instances of the connector can be run connecting to different MPC servers by changing the values in the env
-   file.
-   For example:
-   ```bash
-   docker --name connector0 run --env-file 1.env -p 3000:3000 connector
-   ```
-   ```bash
-   docker --name connector0 run --env-file 2.env -p 3001:3000 connector
-   ```
-5. Launch the task on both connectors, ensuring the task on leader is launched in the end.
-   ```bash
-   curl -X POST -v http://localhost:3001/launch
-   ```
-   ```bash
-   curl -X POST -v http://localhost:3000/launch
-   ```
-7. The garble program file used in the connector can be modified by changing the contents of
-   file [program.garble](mpc/program.garble)
+- `PORT`: **(Optional, Default: 3000)** The port to listen on.
+- `HOST`: **(Optional, Default: 0.0.0.0)** The host to listen on.
+- `DEBUG`: **(Optional, Default: false)** Whether to enable debug mode. This flag logs all requests and responses to the console. Only recommended for development as in production it could generate a lot of log noise.
+- `JWT_KEY_FILE`: **(Required)** The path to the JWT key file in PEM format. This key is used to sign the JWT token that is used to authenticate requests to the gateway server.
+- `JWT_ISSUER`: **(Required)** The issuer of the JWT token. This will set the `iss` claim in the JWT token.
+- `MPC_BASE_URL`: **(Required)** The base URL of the MPC server. This is the URL of the polytune MPC server responsible for the measles data that will be used to launch tasks.
+- `MPC_LEADER_ID`: **(Optional, Default: 0)** The leader ID of the MPC server. This is the ID of the party that will be the leader of the MPC task. In case of measles, the leader is the party that will be responsible for the measles task.
+- `MPC_PARTY_ID`: **(Optional, Default: 0)** The party ID of the MPC server. This is the ID of the party that will be the participant of the MPC task. In case of measles, the party ID is the ID of the party that will be the participant of the measles task which in our case is the same as the leader ID.
+- `MPC_PARTICIPANTS`: **(Required)** The participants of the MPC server. This is a comma separated list of URLs of the MPC servers that will be the participants of the MPC task.
+- `CALLBACK_BASE_URL`: **(Required)** The base URL of the callback server. This is the URL of the server that will be called back when the MPC task is completed by the Polytune MPC server.
+- `ESU_BASE_URL`: **(Required)** The base URL of the ESU server. This is the URL of the ESU gateway server that will be used to call the ESU connector module.
 
-## Setup (Local)
+## ESU Module
 
-1. Create an environment variable file and add appropriate values
-   ```bash
-   cp example.env .env
-   ```
-2. Run the program
-   ```bash
-   go run cmd/*.go
-   ```
+### Configuration Options (Environment Variables)
+
+- `PORT`: **(Optional, Default: 3000)** The port to listen on.
+- `HOST`: **(Optional, Default: 0.0.0.0)** The host to listen on.
+- `DEBUG`: **(Optional, Default: false)** Whether to enable debug mode. This flag logs all requests and responses to the console. Only recommended for development as in production it could generate a lot of log noise.
+- `JWT_KEY_FILE`: **(Required)** The path to the JWT key file in PEM format. This key is used to sign the JWT token that is used to authenticate requests to the gateway server.
+- `JWT_ISSUER`: **(Required)** The issuer of the JWT token. This will set the `iss` claim in the JWT token.
+- `MPC_BASE_URL`: **(Required)** The base URL of the MPC server. This is the URL of the polytune MPC server responsible for the esu vaccination data that will be used to launch tasks.
+- `MPC_LEADER_ID`: **(Optional, Default: 0)** The leader ID of the MPC server. This is the ID of the party that will be the leader of the MPC task. In our, the leader is the party that will be responsible for the measles task.
+- `MPC_PARTY_ID`: **(Optional, Default: 1)** The party ID of the MPC server. This is the ID of the party that will be the participant of the MPC task. In our use case, the party ID is the ID of the party that will be the participant of the esu task.
+- `MPC_PARTICIPANTS`: **(Required)** The participants of the MPC server. This is a comma separated list of URLs of the MPC servers that will be the participants of the MPC task.
+- `VACCINATION_BASE_URL`: **(Required)** The base URL of the vaccination server. This is the URL of the vaccination server that will be used to get the vaccination data.
+
+# Testing
+
+In order the test the whole setup, a mock vaccination server is provided.
+A `docker-compose.yml` file is provided to run the whole setup.
+```bash
+docker compose up -d
+```
+
+Once the setup is running, you can test the whole flow by sending a request to the measles server.
+```bash
+curl -X POST http://localhost:3001/measles-vaccination-check/schedule -H "Content-Type: application/json" -d '{"requestId": "123e4567-e89b-12d3-a456-426614174000", "fileStateIds": ["123e4567-e89b-12d3-a456-426614174000"]}'
+```
+
+Once the request is sent, you can check the result by sending a request to the measles server.
+```bash
+curl http://localhost:3001/measles-vaccination-check/result/123e4567-e89b-12d3-a456-426614174000
+```
+
+# Deployment
+
+The pre-built images are readily available for donwload from the GitHub Container Registry.
+
+For Measles module, you can find the image [here](https://github.com/polyteia-connect/mpc-connector-frankfurt/pkgs/container/mpc-connector-frankfurt-measles).
+
+And for ESU module, you can find the image [here](https://github.com/polyteia-connect/mpc-connector-frankfurt/pkgs/container/mpc-connector-frankfurt-esu).
+
+You can also build your own images by using the Dockerfile-esu and Dockerfile-measles files by running the following commands:
+```bash
+docker build -t mpc-connector-frankfurt-esu -f Dockerfile-esu .
+docker build -t mpc-connector-frankfurt-measles -f Dockerfile-measles .
+```
