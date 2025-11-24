@@ -79,7 +79,7 @@ func (c *Client) createPolicy(data []uuid.UUID, taskID uuid.UUID, callbackURL st
 		launchRequest.Output = callbackURL
 	}
 	launchRequest.Constants.IDLEN.NumUnsigned = numUnsigned(16, "Usize")
-	launchRequest.Constants.ROWS.NumUnsigned = numUnsigned(byte(len(data)), "Usize")
+	launchRequest.Constants.ROWS.NumUnsigned = numUnsigned(len(data), "Usize")
 
 	// Initialize the outer array with the correct length
 	launchRequest.Input.Array = make([]struct {
@@ -97,7 +97,7 @@ func (c *Client) createPolicy(data []uuid.UUID, taskID uuid.UUID, callbackURL st
 
 		j := 0
 		for _, bv := range v {
-			launchRequest.Input.Array[i].Array[j].NumUnsigned = numUnsigned(bv, "U8")
+			launchRequest.Input.Array[i].Array[j].NumUnsigned = numUnsigned(int(bv), "U8")
 			j++
 		}
 		i++
@@ -106,7 +106,7 @@ func (c *Client) createPolicy(data []uuid.UUID, taskID uuid.UUID, callbackURL st
 	return launchRequest
 }
 
-func numUnsigned(val byte, dataType string) []any {
+func numUnsigned(val int, dataType string) []any {
 	return []any{
 		val,
 		dataType,
