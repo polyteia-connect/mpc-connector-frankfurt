@@ -39,8 +39,7 @@ type Service struct {
 	esuClient       *resty.Client
 }
 
-func NewService(store store.Store[*Task], mpcClient *mpc.Client, callbackBaseURL string, esuBaseURL string) *Service {
-	esuClient := resty.New().SetBaseURL(esuBaseURL)
+func NewService(store store.Store[*Task], mpcClient *mpc.Client, esuClient *resty.Client, callbackBaseURL string) *Service {
 	return &Service{
 		store:           store,
 		mpcClient:       mpcClient,
