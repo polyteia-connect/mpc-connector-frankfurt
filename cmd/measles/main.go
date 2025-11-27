@@ -26,11 +26,16 @@ func main() {
 		SetDebug(config.Debug).
 		SetPreRequestHook(jwtToken.RestyMiddleware())
 
+	esuClient := resty.New().
+		SetBaseURL(config.ESUBaseURL).
+		SetDebug(config.Debug).
+		SetPreRequestHook(jwtToken.RestyMiddleware())
+
 	taskStore := store.NewMemoryStore[*measles.Task]()
 
 	mpcClient := mpc.NewClient(mpcRestyClient, config.MPCLeaderID, config.MPCPartyID, config.MPCParticipants)
 
-	measlesService := measles.NewService(taskStore, mpcClient, config.CallbackBaseURL, config.ESUBaseURL)
+	measlesService := measles.NewService(taskStore, mpcClient, esuClient, config.CallbackBaseURL)
 
 	measlesHandler := measles.NewHandler(measlesService)
 	measlesHandler.Configure()
