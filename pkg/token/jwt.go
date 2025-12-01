@@ -52,9 +52,11 @@ func NewJWT(keyFilePath string, issuer string) (*JWT, error) {
 }
 
 func (j *JWT) GenerateToken() (string, error) {
+	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
 		"iss":   j.Issuer,
-		"exp":   time.Now().Add(time.Minute * 5).Unix(),
+		"iat":   now.Unix(),
+		"exp":   now.Add(time.Minute * 5).Unix(),
 		"roles": []string{"POLYTUNE_GW_INTERNAL_ACCESS"},
 	})
 
